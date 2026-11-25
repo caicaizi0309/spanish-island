@@ -1,0 +1,29 @@
+/* Pastel surfaces with dark, readable text. Semantic illustration colours stay literal. */
+body{background:#fffafb;color:#534b66}
+.mast{border-color:#f0e8f1}.mast a{color:#6a6081}.mast span{color:#7e738b}
+.chapter-title{background:#f5dce8;border-color:#dfbbce;color:#5e4c68}
+.chapter-title small{color:#745b77}.chapter-title>span{color:#b98eac}
+.chapter:nth-child(2) .chapter-title{background:#dcebf9;border-color:#b7cce4}
+.chapter:nth-child(3) .chapter-title{background:#e8e0f7;border-color:#c9bbdf}
+.chapter:nth-child(4) .chapter-title{background:#def1e9;border-color:#b4d7c9}
+.node{background:#eee9f1;border-color:#ddd4e2;color:#aa9db5}
+.node.ready{background:#f2cedf;border-color:#dba8c2;color:#72556b;box-shadow:0 0 0 7px #fffafb,0 0 0 10px #eeddec}
+.node.done{background:#d6e7f8;border-color:#aac5e0;color:#486787}
+.step>small{color:#84657e}.port header,.exit,.port>small,.port .muted{color:#776b84}
+.port progress{accent-color:#c5b0de}.route-stages{color:#82738d;gap:12px;flex-wrap:wrap}
+.route-stages .now{color:#75578e}.rule{background:#ede7f8}
+.primary-btn{background:#e7d8f4;border-color:#c5afd9;color:#624c76}
+.primary-btn:hover{background:#dfcceb}.ghost-btn{background:#fffdff;border-color:#eadfeb;color:#5f526e}
+.ghost-btn:hover{background:#f6ebf4}.sound{background:#e5effb;border-color:#c6d6e9;color:#536f91}
+.port input{background:#fffdff;border-color:#decfe6;color:#534b66}
+.port input:focus,button:focus-visible,a:focus-visible{outline-color:#b9a1ce}
+.port #coastFeedback:not(:empty){background:#eaf3ef}
+.medal{background:#f8e5b8;border-color:#ebd5a2;color:#8c7654}
+footer{color:#987d96}
+.word-model{font-size:clamp(24px,5vw,34px);font-weight:700;letter-spacing:.05em;color:#685078;overflow-wrap:anywhere;margin:18px auto}
+.word-mask{font-size:24px;letter-spacing:.09em;color:#9277a8;overflow-wrap:anywhere}
+.hint-btn{border:0;background:none;color:#785b90;text-decoration:underline;padding:12px;min-height:44px}
+#wordHint{color:#735b8a;font-size:22px;margin:12px 0}
+.route-options button{font-size:19px}
+.port .scene{height:190px}
+@media(max-width:480px){.route-stages{gap:8px;font-size:13px}.word-model{font-size:25px}}

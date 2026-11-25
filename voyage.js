@@ -3,7 +3,7 @@
   titles.route = '学习航线';
   const root = document.querySelector('#voyage'), key = 'spanishCoastPath.v1';
   const people = ['yo（我）','tú（你）','él / ella / usted（他、她、您）','nosotros/as（我们）','vosotros/as（你们）','ellos / ellas / ustedes（他们、你们）'];
-  const badges = ['初识','辨认','独立写'];
+  const badges = ['认识','选西语','看词写','提示写','独立写'];
   const byId = Object.fromEntries(words.map(w=>[w.id,w]));
   const subjects = [{id:'position',name:'物品在哪里'},{id:'seasons',name:'四季'},{id:'colors',name:'颜色'},{id:'months',name:'月份'},{id:'verb',name:'动词变位'},...TOPICS.slice(0,8)];
   const chapters=[{name:'看图认识世界',topics:['position','seasons','colors','months']},{name:'聊聊自己',topics:['greetings','countries']},{name:'我的家',topics:['rooms','furniture','kitchen','bathroom','rental']},{name:'说说每一天',topics:['routine','verb']}];
@@ -17,6 +17,12 @@
   }));
   let data;try{data=JSON.parse(localStorage.getItem(key))}catch{}
   if(!data?.book || !units[data.topic])data={topic:'position',book:{},active:null};
+  if(data.version!==2){
+    for(const r of Object.values(data.book)){r.stage=r.passed?5:0;r.queue=[];r.hits={};r.hinted=false}
+    data.version=2;
+    if(data.active!==null){const r=data.book[data.topic+':'+data.active];if(r&&!r.passed)r.queue=[...units[data.topic][data.active].items]}
+    localStorage.setItem(key,JSON.stringify(data));
+  }
   const trail=chapters.flatMap(c=>c.topics.flatMap(topic=>units[topic].map((u,i)=>({topic,i,u}))));
   const available=(topic,i)=>{const n=trail.findIndex(x=>x.topic===topic&&x.i===i);return n===0||data.book[topic+':'+i]||data.book[trail[n-1].topic+':'+trail[n-1].i]?.passed};
   const persist=()=>localStorage.setItem(key,JSON.stringify(data));
@@ -28,7 +34,7 @@
   function start(i){
     if(!units[data.topic][i] || !available(data.topic,i))return;
     data.active=i;const existing=entry();
-    if(!existing||existing.stage===3)data.book[unitKey(i)]={stage:0,queue:[...current().items],passed:!!existing?.passed};
+    if(!existing||existing.stage===5)data.book[unitKey(i)]={stage:0,queue:[...current().items],passed:!!existing?.passed,hits:{},hinted:false};
     persist();render();
   }
   const answer=(u,id)=>u.verb?u.verb.forms[id]:byId[id].es;
@@ -47,8 +53,8 @@
   }
   const picture=w=>w?wordScene(w):'';
   function options(u,id){
-    const correct=u.verb?answer(u,id):meaning(u,id);
-    const pool=u.verb?u.verb.forms:words.filter(w=>w.topic===data.topic&&w.es!==byId[id].es).map(w=>w.zh);
+    const correct=answer(u,id);
+    const pool=u.verb?u.verb.forms:words.filter(w=>w.topic===data.topic&&w.es!==byId[id].es).map(w=>w.es);
     return shuffle([correct,...shuffle([...new Set(pool)].filter(o=>o!==correct)).slice(0,3)]);
   }
   let choices=[];
@@ -61,28 +67,34 @@
       })).join('')+'</div></section>').join('')+'</div>';return;
     }
     const u=current(),r=entry(),i=data.active;
-    const head=btn('×','map','exit','aria-label="退出练习"')+'<progress max="3" value="'+r.stage+'" aria-label="关卡进度"></progress><span>'+subject.name+'</span>';
-    if(r.stage===3){root.innerHTML='<article class="port"><header>'+head+'</header><div class="medal">★</div><h2>过关啦！</h2>'+btn('继续','nextUnit','primary-btn')+'</article>';return}
+    const head=btn('×','map','exit','aria-label="退出练习"')+'<progress max="5" value="'+r.stage+'" aria-label="关卡进度"></progress><span>'+subject.name+'</span>';
+    if(r.stage===5){root.innerHTML='<article class="port"><header>'+head+'</header><div class="medal">★</div><h2>这一关完成啦！</h2><p>'+(r.masteredV2?'每个词都已独立写对两次。':'已有通关记录，回练可体验新版。')+'</p>'+btn('继续','nextUnit','primary-btn')+'</article>';return}
     const id=r.queue[0],a=answer(u,id),m=meaning(u,id),st=r.stage;
     let part='';
     if(st===0)part=(u.verb?'<p class="rule">'+esc(guide(u.verb))+'</p>':picture(byId[id]))+'<h2 lang="es">'+esc(a)+'</h2><p>'+esc(m)+'</p>'+(u.verb?'<p class="muted">'+esc(u.verb.examples[0].join(' · '))+'</p>':'')+'<div class="lesson-actions">'+btn('♫','speak','sound','aria-label="听发音"')+btn('继续','read','primary-btn')+'</div>';
-    if(st===1){const illustrated=!u.verb&&!!picture(byId[id]);choices=options(u,id);part='<h2 class="instruction">'+(u.verb?'选出变位':illustrated?'选出图中的意思':'选出中文意思')+'</h2>'+(illustrated?picture(byId[id]):'<h2>'+esc(u.verb?people[id]:a)+'</h2>')+'<div class="route-options">'+choices.map((v,j)=>btn(esc(v),'choice','ghost-btn','data-i="'+j+'"')).join('')+'</div>'}
-    if(st===2)part='<h2 class="instruction">'+(u.verb?'写出变位':'用西语怎么说？')+'</h2><h2>'+esc(m)+'</h2><form id="coastForm"><input aria-label="西语答案" id="coastInput" autocomplete="off" spellcheck="false" placeholder="输入答案"><button class="primary-btn">检查</button></form><small>可以不打重音；名词带冠词。</small>';
+    if(st===1){const illustrated=!u.verb&&!!picture(byId[id]);choices=options(u,id);part='<h2 class="instruction">'+(u.verb?'选出变位':'选出西班牙语')+'</h2>'+(illustrated?picture(byId[id]):'<h2>'+esc(u.verb?people[id]:m)+'</h2>')+'<div class="route-options">'+choices.map((v,j)=>btn(esc(v),'choice','ghost-btn','data-i="'+j+'" lang="es"')).join('')+'</div>'}
+    if(st>=2){
+      const model=spokenText(a),mask=model.split(' ').map(word=>word[0]+word.slice(1).replace(/[\p{L}]/gu,'＿')).join(' ');
+      part='<h2 class="instruction">'+(st===2?'看着词，写一遍':st===3?'借一点提示，写出来':'现在凭记忆写')+'</h2>'+(u.verb?'':picture(byId[id]))+'<p>'+esc(m)+'</p>'+(st===2?'<div class="word-model" lang="es">'+esc(model)+'</div>':st===3?'<div class="word-mask" lang="es">'+esc(mask)+'</div>':'')+'<form id="coastForm"><input aria-label="西语答案" id="coastInput" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="输入西班牙语"><button class="primary-btn">检查</button></form>'+(st>=3?btn('想不起来，提示一下','hint','hint-btn')+'<div id="wordHint">'+(r.hinted?esc(a):'')+'</div>':'')+'<small>重音可以省略 · 名词带冠词</small>';
+    }
     root.innerHTML='<article class="port"><header>'+head+'</header><div class="route-stages">'+badges.map((s,k)=>'<span class="'+(k===st?'now':'')+'">'+(k<st?'✓':k+1)+' '+s+'</span>').join('')+'</div><small>本轮还剩 '+r.queue.length+' 项'+(u.verb?' · '+u.verb.inf+'（'+u.verb.zh+'）':'')+'</small>'+part+'<div id="coastFeedback" role="status"></div></article>';
-    if(st===2)root.querySelector('input').focus();
-    if(st===0&&state.view==='route')speak(u.verb?.inf||a);
+    if(st>=2)root.querySelector('input').focus();
   }
   function advance(ok){
-    const r=entry(),u=current(),id=r.queue.shift();if(!ok)r.queue.push(id);
-    if(!r.queue.length){r.stage++;if(r.stage===3)r.passed=true;else r.queue=shuffle(u.items)}
+    const r=entry(),u=current(),id=r.queue.shift();r.hits??={};
+    if(r.stage===4){r.hits[id]=ok?(r.hits[id]||0)+1:0;if(r.hits[id]<2)r.queue.push(id)}
+    else if(!ok)r.queue.push(id);
+    r.hinted=false;
+    if(!r.queue.length){r.stage++;if(r.stage===5){r.passed=true;r.masteredV2=true}else r.queue=shuffle(u.items)}
     persist();return id;
   }
   function judge(ok){
-    const r=entry(),u=current(),id=r.queue[0],stage=r.stage;
-    root.querySelectorAll('[data-go="choice"],form input,form button').forEach(el=>el.disabled=true);
-    if(!u.verb){setRecord(id,stage===1?{seen:true,recognition:ok?2:1}:{seen:true,spelling:ok});if(!ok)state.mistakes.add(id);else if(getRecord(id).recognition===2&&getRecord(id).spelling)state.mistakes.delete(id);localStorage.setItem('spanishSprintProgress',JSON.stringify(state.progress));localStorage.setItem('spanishSprintMistakes',JSON.stringify([...state.mistakes]))}
-    advance(ok);
-    root.querySelector('#coastFeedback').innerHTML='<p><b>'+(ok?'✓ 答对了':'再试一次')+'</b><br>'+esc(answer(u,id))+' · '+esc(meaning(u,id))+'</p>'+btn('继续','continue','primary-btn');
+    const r=entry(),u=current(),id=r.queue[0],stage=r.stage,assisted=!!r.hinted;
+    const earned=ok&&!assisted;
+    root.querySelectorAll('[data-go="choice"],[data-go="hint"],form input,form button').forEach(el=>el.disabled=true);
+    if(!u.verb){if(stage===1)setRecord(id,{seen:true,recognition:ok?2:1});else if(stage===4)setRecord(id,{seen:true,spelling:earned&&(r.hits?.[id]||0)>=1});if(!earned)state.mistakes.add(id);else if(getRecord(id).recognition===2&&getRecord(id).spelling)state.mistakes.delete(id);localStorage.setItem('spanishSprintProgress',JSON.stringify(state.progress));localStorage.setItem('spanishSprintMistakes',JSON.stringify([...state.mistakes]))}
+    advance(earned);
+    root.querySelector('#coastFeedback').innerHTML='<p><b>'+(ok?assisted?'写对了，稍后不看提示再试':'✓ 写得很好': '看清词形，稍后再试')+'</b></p><div class="word-model" lang="es">'+esc(answer(u,id))+'</div><p>'+esc(meaning(u,id))+'</p>'+btn('继续','continue','primary-btn');
     root.querySelector('[data-go="continue"]').focus();
   }
   root.onchange=e=>{if(e.target.id==='routeSubject'){data.topic=e.target.value;data.active=null;persist();render()}};
@@ -93,7 +105,8 @@
     case 'nextUnit':{const n=trail.findIndex(x=>x.topic===data.topic&&x.i===data.active),next=trail[n+1];if(next){data.topic=next.topic;start(next.i)}else{data.active=null;persist();render()}break}
     case 'speak':speak(current().verb?.inf||answer(current(),entry().queue[0]));break;
     case 'read':advance(true);render();break;
-    case 'choice':judge(choices[+b.dataset.i]===(current().verb?answer(current(),entry().queue[0]):meaning(current(),entry().queue[0])));break;
+    case 'choice':judge(choices[+b.dataset.i]===answer(current(),entry().queue[0]));break;
+    case 'hint':entry().hinted=true;persist();root.querySelector('#wordHint').textContent=answer(current(),entry().queue[0]);root.querySelector('input').focus();break;
     case 'continue':render();break;
   }};
   root.onsubmit=e=>{e.preventDefault();const input=root.querySelector('#coastInput');if(!input||input.disabled||!input.value.trim())return;judge(answerVariants(answer(current(),entry().queue[0])).includes(normalizeAnswer(input.value)))};
