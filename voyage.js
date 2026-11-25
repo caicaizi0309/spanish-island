@@ -15,17 +15,29 @@
     for(let i=0;i<list.length;i+=size){const group=list.slice(i,i+size);groups.push({name:group[0].es+' … '+group.at(-1).es,items:group.map(w=>w.id)})}
     return [s.id,groups];
   }));
-  let data;try{data=JSON.parse(localStorage.getItem(key))}catch{}
-  if(!data?.book || !units[data.topic])data={topic:'position',book:{},active:null};
-  if(data.version!==2){
-    for(const r of Object.values(data.book)){r.stage=r.passed?5:0;r.queue=[];r.hits={};r.hinted=false}
-    data.version=2;
-    if(data.active!==null){const r=data.book[data.topic+':'+data.active];if(r&&!r.passed)r.queue=[...units[data.topic][data.active].items]}
-    localStorage.setItem(key,JSON.stringify(data));
-  }
+  let data=readStoredJSON(key,null);
+  const original=JSON.stringify(data);
+  if(!data || typeof data!=='object' || Array.isArray(data))data={};
+  if(!data.book || typeof data.book!=='object' || Array.isArray(data.book))data.book={};
+  if(!units[data.topic])data.topic='position';
+  for(const [topic,list] of Object.entries(units))list.forEach((u,i)=>{
+    const k=topic+':'+i,r=data.book[k];if(!r)return;
+    if(typeof r!=='object'||Array.isArray(r)){delete data.book[k];return}
+    if(data.version!==2){r.stage=r.passed?5:0;r.queue=r.passed?[]:[...u.items];r.hits={};r.hinted=false}
+    if(!Number.isInteger(r.stage)||r.stage<0||r.stage>5)r.stage=0;
+    if(r.stage===5){r.passed=true;r.queue=[]}
+    else {
+      r.queue=Array.isArray(r.queue)?r.queue.filter(id=>u.items.includes(id)):[];
+      if(!r.queue.length)r.queue=[...u.items];
+    }
+    if(!r.hits||typeof r.hits!=='object'||Array.isArray(r.hits))r.hits={};
+  });
+  data.version=2;
+  if(!Number.isInteger(data.active)||!units[data.topic][data.active]||!data.book[data.topic+':'+data.active])data.active=null;
+  if(JSON.stringify(data)!==original){if(original!=='null')writeStoredJSON(key+'.before-recovery',JSON.parse(original));writeStoredJSON(key,data)}
   const trail=chapters.flatMap(c=>c.topics.flatMap(topic=>units[topic].map((u,i)=>({topic,i,u}))));
   const available=(topic,i)=>{const n=trail.findIndex(x=>x.topic===topic&&x.i===i);return n===0||data.book[topic+':'+i]||data.book[trail[n-1].topic+':'+trail[n-1].i]?.passed};
-  const persist=()=>localStorage.setItem(key,JSON.stringify(data));
+  const persist=()=>writeStoredJSON(key,data);
   const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const unitKey=i=>data.topic+':'+i;
   const current=()=>units[data.topic][data.active];
@@ -92,7 +104,7 @@
     const r=entry(),u=current(),id=r.queue[0],stage=r.stage,assisted=!!r.hinted;
     const earned=ok&&!assisted;
     root.querySelectorAll('[data-go="choice"],[data-go="hint"],form input,form button').forEach(el=>el.disabled=true);
-    if(!u.verb){if(stage===1)setRecord(id,{seen:true,recognition:ok?2:1});else if(stage===4)setRecord(id,{seen:true,spelling:earned&&(r.hits?.[id]||0)>=1});if(!earned)state.mistakes.add(id);else if(getRecord(id).recognition===2&&getRecord(id).spelling)state.mistakes.delete(id);localStorage.setItem('spanishSprintProgress',JSON.stringify(state.progress));localStorage.setItem('spanishSprintMistakes',JSON.stringify([...state.mistakes]))}
+    if(!u.verb){if(stage===1)setRecord(id,{seen:true,recognition:ok?2:1});else if(stage===4)setRecord(id,{seen:true,spelling:earned&&(r.hits?.[id]||0)>=1});if(!earned)state.mistakes.add(id);else if(getRecord(id).recognition===2&&getRecord(id).spelling)state.mistakes.delete(id);writeStoredJSON('spanishSprintProgress',state.progress);writeStoredJSON('spanishSprintMistakes',[...state.mistakes])}
     advance(earned);
     root.querySelector('#coastFeedback').innerHTML='<p><b>'+(ok?assisted?'写对了，稍后不看提示再试':'✓ 写得很好': '看清词形，稍后再试')+'</b></p><div class="word-model" lang="es">'+esc(answer(u,id))+'</div><p>'+esc(meaning(u,id))+'</p>'+btn('继续','continue','primary-btn');
     root.querySelector('[data-go="continue"]').focus();

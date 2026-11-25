@@ -70,15 +70,18 @@ const verbs=[
   {inf:'hacer',zh:'做；制作',type:'第一人称不规则',forms:['hago','haces','hace','hacemos','hacéis','hacen'],examples:[['Hago los deberes.','我做作业。'],['¿Qué hacéis por la tarde?','你们下午做什么？']]}
 ];
 
-const savedSession=JSON.parse(localStorage.getItem('spanishSprintSession')||'{}');
+function readStoredJSON(key,fallback){try{const value=JSON.parse(localStorage.getItem(key));return value??fallback}catch{return fallback}}
+function writeStoredJSON(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+function storedObject(key){const value=readStoredJSON(key,{});return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}
+const savedSession=storedObject('spanishSprintSession');
 const state={
   view:'home',topic:savedSession.topic||'all',direction:savedSession.direction||'es-zh',priority:!!savedSession.priority,cardIndex:0,deck:[],flipped:false,ratingLocked:false,ratingTimer:null,
-  progress:JSON.parse(localStorage.getItem('spanishSprintProgress')||'{}'),
-  mistakes:new Set(JSON.parse(localStorage.getItem('spanishSprintMistakes')||'[]')),
+  progress:storedObject('spanishSprintProgress'),
+  mistakes:new Set(Array.isArray(readStoredJSON('spanishSprintMistakes',[]))?readStoredJSON('spanishSprintMistakes',[]):[]),
   quiz:[],quizIndex:0,quizScore:0,quizAnswered:false,libraryPriority:false,
   spellDeck:[],spellIndex:0,spellAnswered:false,
-  verbIndex:Number(localStorage.getItem('spanishVerbIndex')||0),verbChecked:false,verbProgress:JSON.parse(localStorage.getItem('spanishVerbProgress')||'{}'),lastSpanishInput:null,
-  timeMode:localStorage.getItem('spanishTimeMode')||'basic',timeQuestion:JSON.parse(localStorage.getItem('spanishTimeQuestion')||'null'),timeAnswered:false,timeScore:Number(localStorage.getItem('spanishTimeScore')||0),timeDone:Number(localStorage.getItem('spanishTimeDone')||0)
+  verbIndex:0,verbChecked:false,verbProgress:storedObject('spanishVerbProgress'),lastSpanishInput:null,
+  timeMode:'basic',timeQuestion:null,timeAnswered:false,timeScore:0,timeDone:0
 };
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const topicName=id=>TOPICS.find(t=>t.id===id)?.name||id;

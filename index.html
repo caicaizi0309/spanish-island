@@ -5,13 +5,21 @@
 <meta name="theme-color" content="#f5dce8">
 <meta name="description" content="看图学西语，一关一关记牢。">
 <title>Nanako · 西语小岛</title>
-<link rel="stylesheet" href="coast.css">
-<link rel="stylesheet" href="baby.css">
+<link rel="stylesheet" href="coast.css?v=20261125b">
+<link rel="stylesheet" href="baby.css?v=20261125b">
 </head>
 <body>
 <header class="mast"><a href="./" aria-label="回到学习路径">≈ <b>西语小岛</b></a><span>un poquito cada día</span></header>
-<main id="voyage" aria-label="学习路径"></main>
+<main id="voyage" aria-label="学习路径"><p>正在载入小岛…</p><noscript>请启用浏览器 JavaScript 以进入练习。</noscript></main>
 <footer>made by nanako <span>﹏﹏</span></footer>
 <div id="toast" role="status"></div><div id="audioStatus" class="sr-only" role="status"></div>
-<script src="audio/manifest.js"></script><script src="app.js"></script><script src="scenes.js"></script><script src="voyage.js"></script>
+<script>
+window.addEventListener('error',function(){
+ const root=document.getElementById('voyage');
+ if(root && (root.textContent.includes('正在载入小岛') || !root.textContent.trim())){
+ root.innerHTML='<p>页面暂时没有加载成功，请重试。已有学习记录不会被清除。</p><button onclick="location.reload()">重新加载</button>';
+ }
+},true);
+</script>
+<script src="audio/manifest.js?v=20261125b"></script><script src="app.js?v=20261125b"></script><script src="scenes.js?v=20261125b"></script><script src="voyage.js?v=20261125b"></script>
 </body></html>
